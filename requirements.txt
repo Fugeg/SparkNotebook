@@ -1,0 +1,10 @@
+gradio
+psycopg2-binary
+pgvector
+dashscope
+numpy
+python-dotenv
+oss2
+redis
+openai
+aiohttp
