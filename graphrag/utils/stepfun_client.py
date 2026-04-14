@@ -35,7 +35,8 @@ class StepFunClient:
         return self.client is not None
     
     def chat(self, prompt: str, system_prompt: Optional[str] = None, 
-             temperature: float = 0.7, max_tokens: int = 2000) -> str:
+             temperature: float = 0.7, max_tokens: int = 2000,
+             timeout: float = 30.0) -> str:
         """
         调用阶跃星辰模型进行对话
         
@@ -44,6 +45,7 @@ class StepFunClient:
             system_prompt: 系统提示词
             temperature: 温度参数
             max_tokens: 最大token数
+            timeout: 请求超时时间(秒)，默认30秒
             
         Returns:
             模型回复
@@ -57,11 +59,13 @@ class StepFunClient:
                 messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": prompt})
             
+            # 使用超时配置
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
+                timeout=timeout
             )
             
             return response.choices[0].message.content

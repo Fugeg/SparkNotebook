@@ -1,0 +1,13 @@
+# Grafana 仪表盘配置
+apiVersion: 1
+
+providers:
+  - name: 'Harness Dashboards'
+    orgId: 1
+    folder: 'Harness Engineering'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

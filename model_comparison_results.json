@@ -1,0 +1,102 @@
+{
+  "instruction_following": {
+    "stepfun": {
+      "output": "HELLO WORLD 2024 AI PROJECT 123 → 转换为大写：HELLO WORLD 2024 AI PROJECT 123 → 移除数字：HELLO WORLD AI PROJECT → 单词间添加\"-\"：HELLO-WORLD-AI-PROJECT → 添加标记：HELLO-WORLD-AI-PROJECT[PROCESSED]",
+      "checks": {
+        "转为大写": true,
+        "移除数字": false,
+        "添加分隔符": true,
+        "添加标记": true
+      },
+      "score": 0.75,
+      "latency": 3.654686212539673
+    },
+    "qwen": {
+      "output": "HELLO-WORLD-AI-PROJECT[PROCESSED]",
+      "checks": {
+        "转为大写": true,
+        "移除数字": true,
+        "添加分隔符": true,
+        "添加标记": true
+      },
+      "score": 1.0,
+      "latency": 0.9462010860443115
+    }
+  },
+  "json_format_stability": {
+    "step_3.5_flash": {
+      "valid_rate": 1.0,
+      "avg_latency": 3.6798452536265054
+    },
+    "qwen_plus": {
+      "valid_rate": 1.0,
+      "avg_latency": 1.1765441099802654
+    }
+  },
+  "long_context_understanding": {
+    "step_3.5_flash": {
+      "score": 0.0,
+      "latency": 24.512052536010742,
+      "checks": {
+        "提到项目名称": false,
+        "提到核心技术": false,
+        "提到主要问题": false,
+        "提到指标": false,
+        "格式正确": false
+      }
+    },
+    "qwen_plus": {
+      "score": 1.0,
+      "latency": 3.4641172885894775,
+      "checks": {
+        "提到项目名称": true,
+        "提到核心技术": true,
+        "提到主要问题": true,
+        "提到指标": true,
+        "格式正确": true
+      }
+    }
+  },
+  "technical_logic_correctness": {
+    "step_3.5_flash": {
+      "cases": [
+        {
+          "case": "算法复杂度分析",
+          "score": 0.8,
+          "output_preview": "当算法的时间复杂度为 O(n log n) 时，运行时间与 n log n 成正比。数据量从 1000 增加到 1000000（即 n 扩大 1000 倍），运行时间的增加倍数计算如下：\n\n\\[\n\\f"
+        },
+        {
+          "case": "数据库索引原理",
+          "score": 0.8,
+          "output_preview": "这是一个非常核心的数据库索引问题。简单来说，**根本原因在于两种索引维护数据顺序的方式完全不同**：B-Tree 索引**保持键值的逻辑排序**，而 Hash 索引**完全打乱键值的顺序，仅通过哈希函"
+        },
+        {
+          "case": "缓存策略",
+          "score": 1.0,
+          "output_preview": "Redis 的 **LRU（最近最少使用）** 和 **LFU（最不经常使用）** 是两种核心的缓存淘汰策略，它们的核心区别在于**淘汰依据不同**，这导致了它们适用于不同的数据访问模式。\n\n### "
+        }
+      ],
+      "average_score": 0.8666666666666667
+    },
+    "qwen_plus": {
+      "cases": [
+        {
+          "case": "算法复杂度分析",
+          "score": 0.6,
+          "output_preview": "我们来分析时间复杂度为 $ O(n \\log n) $ 的算法，当输入规模 $ n $ 从 $ n_1 = 1000 $ 增加到 $ n_2 = 1{,}000{,}000 $（即扩大 **1000 "
+        },
+        {
+          "case": "数据库索引原理",
+          "score": 0.8,
+          "output_preview": "这是一个非常经典且重要的数据库索引原理问题。PostgreSQL 中 **B-Tree 索引适合等值查询和范围查询，而 Hash 索引仅适合等值查询**，根本原因在于二者**底层数据结构的设计目标与组"
+        },
+        {
+          "case": "缓存策略",
+          "score": 0.8,
+          "output_preview": "Redis 的 **LRU（Least Recently Used）** 和 **LFU（Least Frequently Used）** 是两种不同的缓存淘汰策略，核心区别在于**淘汰依据不同**："
+        }
+      ],
+      "average_score": 0.7333333333333334
+    }
+  }
+}

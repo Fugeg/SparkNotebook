@@ -103,7 +103,7 @@ class LLMModel:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=0,
+                temperature=0.01,
                 max_tokens=10
             )
             intent = response.output.text.strip()

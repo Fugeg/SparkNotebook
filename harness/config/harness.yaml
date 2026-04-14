@@ -1,0 +1,48 @@
+deployment:
+  ab_test:
+    enabled: false
+    v2_traffic_percentage: 5
+  active_version: v1
+  prompt_versions:
+    v1:
+      description: 基线版本，稳定可用
+      file: prompts/v1_analysis.txt
+      is_stable: true
+      name: baseline
+    v2:
+      description: 实验版本，待验证
+      file: prompts/v2_analysis.txt
+      is_stable: false
+      name: experimental
+evaluation:
+  golden_dataset_path: tests/evaluation/golden_dataset.jsonl
+  judge:
+    model: qwen-plus
+    pass_threshold: 75
+    weights:
+      accuracy: 0.4
+      efficiency: 0.1
+      format: 0.3
+      logic: 0.2
+  output_dir: tests/evaluation/results
+logging:
+  file: logs/harness.log
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  level: INFO
+runtime:
+  checkpointer:
+    file_path: data/checkpoints
+    save_interval: 1
+    type: file
+  monitor:
+    enabled: true
+    log_dir: logs/harness
+    metrics:
+    - latency
+    - token_usage
+    - success_rate
+    - error_type
+  thresholds:
+    error_rate_threshold: 0.05
+    max_latency_ms: 30000
+    max_token_per_request: 4000

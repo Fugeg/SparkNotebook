@@ -365,7 +365,7 @@ Input: "什么是人工智能" -> NO"""
         # 1. 搜索 GitHub 项目（支持 MCP Server 模式和 REST API 模式）
         print("[1/4] 搜索 GitHub 相关项目...")
         github_repos = []
-        readme_content = ""
+        readme_contents = []  # 存储所有项目的 README
         
         # 检查是否启用 MCP Server 模式
         use_mcp = os.getenv('USE_GITHUB_MCP', 'false').lower() == 'true'
@@ -379,16 +379,32 @@ Input: "什么是人工智能" -> NO"""
                 github_repos = await client.search_repositories(search_query, per_page=3)
                 print(f"      找到 {len(github_repos)} 个相关项目")
                 
-                # 2. 获取第一个项目的 README
+                # 2. 获取所有项目的 README
                 if github_repos:
                     print("[2/4] 获取项目详情...")
-                    first_repo = github_repos[0]
-                    owner, repo = first_repo['full_name'].split('/')
-                    readme_content = await client.get_readme(owner, repo)
-                    if readme_content:
-                        print(f"      已获取 {first_repo['full_name']} 的 README")
-                    else:
-                        print(f"      未找到 README")
+                    for i, repo in enumerate(github_repos, 1):
+                        try:
+                            owner, repo_name = repo['full_name'].split('/')
+                            readme = await client.get_readme(owner, repo_name)
+                            if readme:
+                                # 限制每个 README 的长度，避免过长
+                                max_readme_length = 2000
+                                if len(readme) > max_readme_length:
+                                    readme = readme[:max_readme_length] + "..."
+                                
+                                readme_contents.append({
+                                    'repo_name': repo['full_name'],
+                                    'readme': readme,
+                                    'stars': repo.get('stars', 0),
+                                    'language': repo.get('language', 'N/A')
+                                })
+                                print(f"      [{i}/{len(github_repos)}] 已获取 {repo['full_name']} 的 README ({len(readme)} 字符)")
+                            else:
+                                print(f"      [{i}/{len(github_repos)}] {repo['full_name']} 未找到 README")
+                        except Exception as e:
+                            print(f"      [{i}/{len(github_repos)}] 获取 {repo['full_name']} 的 README 失败: {e}")
+                    
+                    print(f"      成功获取 {len(readme_contents)}/{len(github_repos)} 个项目的 README")
                 
                 await client.disconnect()
             except Exception as e:
@@ -407,20 +423,33 @@ Input: "什么是人工智能" -> NO"""
                 print(f"      GitHub 搜索失败: {e}")
                 github_repos = []
 
-            # 2. 获取第一个项目的 README（如果有）
+            # 2. 获取所有项目的 README
             if github_repos:
                 print("[2/4] 获取项目详情...")
-                try:
-                    client = MCPGitHubClient(use_mcp_server=False)
-                    first_repo = github_repos[0]
-                    owner, repo = first_repo['full_name'].split('/')
-                    readme_content = await client.get_readme(owner, repo)
-                    if readme_content:
-                        print(f"      已获取 {first_repo['full_name']} 的 README")
-                    else:
-                        print(f"      未找到 README")
-                except Exception as e:
-                    print(f"      获取 README 失败: {e}")
+                client = MCPGitHubClient(use_mcp_server=False)
+                for i, repo in enumerate(github_repos, 1):
+                    try:
+                        owner, repo_name = repo['full_name'].split('/')
+                        readme = await client.get_readme(owner, repo_name)
+                        if readme:
+                            # 限制每个 README 的长度
+                            max_readme_length = 2000
+                            if len(readme) > max_readme_length:
+                                readme = readme[:max_readme_length] + "..."
+                            
+                            readme_contents.append({
+                                'repo_name': repo['full_name'],
+                                'readme': readme,
+                                'stars': repo.get('stars', 0),
+                                'language': repo.get('language', 'N/A')
+                            })
+                            print(f"      [{i}/{len(github_repos)}] 已获取 {repo['full_name']} 的 README ({len(readme)} 字符)")
+                        else:
+                            print(f"      [{i}/{len(github_repos)}] {repo['full_name']} 未找到 README")
+                    except Exception as e:
+                        print(f"      [{i}/{len(github_repos)}] 获取 {repo['full_name']} 的 README 失败: {e}")
+                
+                print(f"      成功获取 {len(readme_contents)}/{len(github_repos)} 个项目的 README")
 
         # 3. 检索本地历史灵感
         print("[3/4] 检索本地历史灵感...")
@@ -436,7 +465,7 @@ Input: "什么是人工智能" -> NO"""
             local_notes = []
 
         # 4. 构建上下文
-        github_context = self._format_github_context(github_repos, readme_content)
+        github_context = self._format_github_context(github_repos, readme_contents)
         local_context = self._format_local_context(local_notes)
 
         # 5. 使用阶跃星辰生成灵感报告
@@ -475,10 +504,12 @@ Input: "什么是人工智能" -> NO"""
         
         return context
 
-    def _format_github_context(self, repos: list, readme: str = "") -> str:
-        """格式化 GitHub 项目信息"""
+    def _format_github_context(self, repos: list, readme_contents: list = None) -> str:
+        """格式化 GitHub 项目信息（支持多个项目的 README）"""
         if not repos:
             return "未找到相关 GitHub 项目。"
+        
+        readme_contents = readme_contents or []
 
         context = "### 相关 GitHub 项目\n\n"
         for i, repo in enumerate(repos[:3], 1):
@@ -488,8 +519,18 @@ Input: "什么是人工智能" -> NO"""
             context += f"   - 语言: {repo.get('language', '未知')}\n"
             context += f"   - 链接: {repo.get('url', '')}\n\n"
 
-        if readme:
-            context += f"\n### 项目 README 摘要\n{readme[:1500]}..."
+        # 添加所有项目的 README 摘要
+        if readme_contents:
+            context += "\n### 项目 README 摘要\n\n"
+            for i, readme_info in enumerate(readme_contents, 1):
+                repo_name = readme_info.get('repo_name', 'Unknown')
+                readme = readme_info.get('readme', '')
+                stars = readme_info.get('stars', 0)
+                language = readme_info.get('language', 'N/A')
+                
+                context += f"**{i}. {repo_name}** (⭐ {stars}, 语言: {language})\n"
+                context += f"{readme[:1000]}...\n\n"  # 每个 README 限制 1000 字符
+                context += "---\n\n"
 
         return context
 

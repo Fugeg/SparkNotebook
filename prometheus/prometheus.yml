@@ -1,0 +1,41 @@
+# Prometheus 配置文件
+global:
+  scrape_interval: 15s      # 默认抓取间隔
+  evaluation_interval: 15s  # 规则评估间隔
+  external_labels:
+    cluster: 'harness'
+    replica: '{{.ExternalURL}}'
+
+# 告警规则（可选）
+rule_files:
+  # - "alert_rules.yml"
+
+# 抓取配置
+scrape_configs:
+  # Prometheus 自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Harness Agent 指标
+  # 假设你的应用暴露指标在 8000 端口
+  - job_name: 'harness-agent'
+    static_configs:
+      - targets: ['host.docker.internal:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    # 如果应用运行在 Docker 中，使用服务名
+    # - targets: ['app:8000']
+
+  # Node Exporter - 系统指标
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # 文件服务发现（用于动态添加目标）
+  - job_name: 'file-sd'
+    file_sd_configs:
+      - files:
+        - '/etc/prometheus/file_sd/*.json'
+        - '/etc/prometheus/file_sd/*.yml'
+        refresh_interval: 5m

@@ -1,0 +1,24 @@
+{
+  "checkpoint_id": "analysis_task_001_step_1",
+  "timestamp": "2026-04-13T18:33:24.564794",
+  "state": {
+    "task_id": "analysis_task_001",
+    "step": 1,
+    "data": {
+      "repos": [
+        "react",
+        "vue"
+      ],
+      "data_fetched": true,
+      "github_data": {
+        "react": {
+          "stars": 220000
+        },
+        "vue": {
+          "stars": 207000
+        }
+      }
+    },
+    "checkpoint_time": "2026-04-13T18:33:24.564777"
+  }
+}

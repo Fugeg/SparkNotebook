@@ -1,0 +1,56 @@
+# Prometheus 配置文件 - 云服务器版本
+# 适用于公网 IP: 101.34.251.212
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'harness-cloud'
+    replica: '101.34.251.212'
+
+# 告警规则
+rule_files:
+  # - "alert_rules.yml"
+
+# 抓取配置
+scrape_configs:
+  # Prometheus 自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Harness Agent 指标
+  # 注意：在云服务器上，应用可能运行在宿主机或 Docker 中
+  - job_name: 'harness-agent'
+    static_configs:
+      # 如果应用运行在宿主机上，使用宿主机 IP
+      - targets: ['101.34.251.212:8000']
+        labels:
+          instance: 'cloud-server'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    scrape_timeout: 3s
+
+  # Node Exporter - 系统指标
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # 文件服务发现（用于动态添加目标）
+  - job_name: 'file-sd'
+    file_sd_configs:
+      - files:
+        - '/etc/prometheus/file_sd/*.json'
+        - '/etc/prometheus/file_sd/*.yml'
+        refresh_interval: 5m
+
+# 远程写入（可选，用于长期存储）
+# remote_write:
+#   - url: "http://remote-storage:9201/write"
+
+# 告警管理器（可选）
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093

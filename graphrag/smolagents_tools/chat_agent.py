@@ -64,6 +64,8 @@ class SmolChatAgent:
         # 对话上下文管理
         self.conversation_history = {}  # user_id -> 对话历史列表
         self.max_history_length = 10    # 保留最近10轮对话
+        self.max_users = 100            # 最多保留100个用户的对话历史
+        self.history_ttl = 3600         # 历史记录过期时间(秒)
         
         self.logger.info("SmolChatAgent 初始化完成")
     
@@ -218,6 +220,17 @@ class SmolChatAgent:
     
     def _add_to_history(self, user_id: int, user_input: str, assistant_response: str):
         """添加对话到历史"""
+        # 清理过期历史
+        self._cleanup_expired_history()
+        
+        # 限制用户数量
+        if user_id not in self.conversation_history and len(self.conversation_history) >= self.max_users:
+            # 移除最久未使用的用户历史
+            oldest_user = min(self.conversation_history.keys(), 
+                            key=lambda k: self.conversation_history[k][-1].get('timestamp', '') if self.conversation_history[k] else '')
+            del self.conversation_history[oldest_user]
+            self.logger.info(f"用户历史超过上限，移除最久未使用的用户: {oldest_user}")
+        
         if user_id not in self.conversation_history:
             self.conversation_history[user_id] = []
         
@@ -230,6 +243,24 @@ class SmolChatAgent:
         # 限制历史长度
         if len(self.conversation_history[user_id]) > self.max_history_length:
             self.conversation_history[user_id] = self.conversation_history[user_id][-self.max_history_length:]
+    
+    def _cleanup_expired_history(self):
+        """清理过期的对话历史"""
+        current_time = datetime.now()
+        expired_users = []
+        
+        for user_id, history in self.conversation_history.items():
+            if history:
+                last_timestamp = history[-1].get('timestamp')
+                if last_timestamp:
+                    last_time = datetime.fromisoformat(last_timestamp)
+                    elapsed = (current_time - last_time).total_seconds()
+                    if elapsed > self.history_ttl:
+                        expired_users.append(user_id)
+        
+        for user_id in expired_users:
+            del self.conversation_history[user_id]
+            self.logger.info(f"清理过期对话历史: user_id={user_id}")
     
     def clear_history(self, user_id: int = None):
         """清空对话历史"""
