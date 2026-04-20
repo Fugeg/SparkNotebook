@@ -210,10 +210,50 @@ class LLMModel:
         except Exception as e:
             print(f"评估相关性失败: {e}")
             return ""
-    
+
+    def estimate_required_tokens(self, query: str) -> int:
+        """
+        根据查询类型估算所需 Token 数量
+
+        Args:
+            query: 用户输入的查询
+
+        Returns:
+            建议的 max_tokens 值
+        """
+        LONG_FORM_KEYWORDS = [
+            "作文", "文章", "报告", "总结", "详细说明", "详细描述",
+            "800字", "1000字", "1500字", "2000字", "写一篇",
+            "介绍一下", "详细介绍一下", "全面介绍",
+            "分析一下", "详细分析", "深度分析",
+            "对比一下", "详细对比", "对比分析"
+        ]
+
+        SHORT_FORM_KEYWORDS = [
+            "是什么", "什么是", "多少", "几个",
+            "谁", "哪里", "什么时候", "怎么", "如何"
+        ]
+
+        query_lower = query.lower()
+
+        if any(kw in query for kw in LONG_FORM_KEYWORDS):
+            if any(kw in query for kw in ["800字", "1000字", "1500字", "2000字"]):
+                import re
+                match = re.search(r'(\d+)字', query)
+                if match:
+                    char_count = int(match.group(1))
+                    return min(int(char_count * 2.5), 4000)
+            return 2000
+
+        if any(kw in query for kw in SHORT_FORM_KEYWORDS):
+            return 300
+
+        return 500
+
     def generate_response(self, query, context, username="用户"):
         """基于检索到的上下文生成回答（搜索记忆模式 - 模式 2）"""
-        # 系统提示词 - 搜索记忆模式（动态用户名）
+        max_tokens = self.estimate_required_tokens(query)
+
         system_prompt = f"""# Role
 你是「AI 记事本助手」，{username} 的个人知识管理助手。
 
@@ -259,7 +299,7 @@ class LLMModel:
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.3,
-                max_tokens=500
+                max_tokens=max_tokens
             )
             return response.output.text
         except Exception as e:
@@ -268,7 +308,8 @@ class LLMModel:
     
     def chat(self, text, username="用户"):
         """日常闲聊模式"""
-        # 系统提示词 - 闲聊模式（动态用户名）
+        max_tokens = self.estimate_required_tokens(text)
+
         system_prompt = f"""# Role
 你是「AI 记事本助手」，{username} 的个人 AI 伙伴。
 
@@ -314,13 +355,13 @@ class LLMModel:
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.5,
-                max_tokens=300
+                max_tokens=max_tokens
             )
             return response.output.text
         except Exception as e:
             print(f"聊天失败: {e}")
             return "抱歉，我现在有点累，请稍后再试。"
-    
+
     def speech_to_text(self, audio_file_path):
         """语音转文本 (STT) - 使用录音文件识别，通过OSS上传获取URL"""
         print("=" * 50)

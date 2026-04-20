@@ -1,9 +1,11 @@
 from datetime import datetime
+import os
 from graphrag.models.llm import LLMModel
 from graphrag.models.embedding import EmbeddingModel
 from graphrag.agents.memory_generator_agent import MemoryGeneratorAgent
 from graphrag.agents.memory_inserter_agent import MemoryInserterAgent
 from graphrag.agents.memory_retriever_agent import MemoryRetrieverAgent
+from graphrag.evolver.evolutionary_node import EvolutionaryNode
 from graphrag.utils.cache_helper import SemanticCache
 
 
@@ -16,7 +18,15 @@ class ChatAgent:
         self.memory_generator = MemoryGeneratorAgent(self.db, self.logger)
         self.memory_inserter = MemoryInserterAgent(self.db, self.logger)
         self.memory_retriever = MemoryRetrieverAgent(self.db, self.logger)
-        
+
+        # Evolver 自我进化
+        self.evolver = EvolutionaryNode(
+            redis_host='localhost',
+            redis_port=6379,
+            use_stepfun=True
+        )
+        self.evolver_enabled = os.getenv('EVOLVER_ENABLED', 'true').lower() == 'true'
+
         # 语义缓存 - 用于缓存 LLM 响应
         self.cache = SemanticCache(
             host='localhost',
@@ -152,6 +162,17 @@ class ChatAgent:
             self.logger.error(f"处理用户输入失败: {e}")
             import traceback
             self.logger.error(traceback.format_exc())
+
+            if self.evolver_enabled:
+                self._trigger_evolution(
+                    agent_id='ChatAgent_v1',
+                    task_type='chat',
+                    query=user_input,
+                    output_content='',
+                    output_quality=0.0,
+                    error_pattern=f'Chat Error - {str(e)[:100]}'
+                )
+
             return "处理您的请求时出现错误，请稍后重试。"
 
     def _is_asking_for_memories(self, user_input: str) -> bool:
@@ -300,6 +321,15 @@ Input: "什么是人工智能" -> NO"""
         # 3. 缓存未命中，执行检索
         retrieval_result = self.memory_retriever.retrieve_memory(user_input, user_id=user_id)
         if not retrieval_result:
+            if self.evolver_enabled:
+                self._trigger_evolution(
+                    agent_id='Retriever_v1',
+                    task_type='retrieval',
+                    query=user_input,
+                    output_content='',
+                    output_quality=0.0,
+                    error_pattern='Empty Retrieval - 记忆检索返回空结果'
+                )
             return "未找到相关记忆。"
 
         # 4. 生成回答（传入用户名）
@@ -546,3 +576,42 @@ Input: "什么是人工智能" -> NO"""
             context += f"{i}. [{note_type}] {note_content[:200]}\n\n"
 
         return context
+
+    def _trigger_evolution(
+        self,
+        agent_id: str,
+        task_type: str,
+        query: str,
+        output_content: str,
+        output_quality: float,
+        error_pattern: str
+    ):
+        """
+        触发进化机制（使用自研 EvolutionaryNode）
+
+        当检测到任务问题（空结果、错误、失败）时，
+        自动调用 EvolutionaryNode 生成改进策略
+        """
+        try:
+            self.logger.info(f"[Evolver] ChatAgent 触发进化: {error_pattern}")
+
+            gene = self.evolver.capture_and_evolve(
+                agent_id=agent_id,
+                task_type=task_type,
+                input_context=query,
+                output_content=output_content,
+                output_quality=output_quality,
+                error_pattern=error_pattern,
+                error_message=error_pattern,
+                token_consumed=0,
+                latency_ms=0
+            )
+
+            if gene:
+                self.logger.info(f"[Evolver] 进化成功: {gene.gene_id}")
+                self.logger.info(f"[Evolver] 策略: {gene.content.get('strategy_name', 'N/A')}")
+            else:
+                self.logger.info("[Evolver] 无需进化或进化失败")
+
+        except Exception as e:
+            self.logger.error(f"[Evolver] ChatAgent 进化触发失败: {e}")

@@ -499,10 +499,10 @@ def create_interface(chat_agent, db):
         gr.Markdown("""
         <div style="text-align: center; padding: 20px 0;">
             <h1 style="font-size: 2.5em; margin: 0; color: #0ea5e9;">
-                ⚡ Fugeg · AI 灵感助手(不止记事本
+                ⚡ SparkNotebook 
             </h1>
             <p style="color: #38bdf8; font-size: 1.1em; margin-top: 10px; letter-spacing: 2px;">
-                ▰▰▰ 基于 GraphRAG 的智能知识管理系统 ▰▰▰
+                ▰▰▰ 基于GraphRAG的知识管理与需求决策平台 ▰▰▰
             </p>
         </div>
         """)

@@ -6,8 +6,8 @@ class DatabaseHandler:
     def __init__(self):
         # 对应你 Docker 容器启动时的配置
         self.conn_config = {
-            "host": "localhost",
-            "database": "ai_notepad",
+            "host": "101.34.251.212",
+            "database": "sparknotebook",
             "user": "root",
             "password": "123456",
             "port": 5432

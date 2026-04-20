@@ -6,7 +6,7 @@ load_dotenv()
 
 class Database:
     def __init__(self):
-        self.connection_string = os.getenv('DATABASE_URL', 'postgresql://root:123456@localhost:5432/ai_notepad')
+        self.connection_string = os.getenv('DATABASE_URL', 'postgresql://root:123456@101.34.251.212:5432/sparknotebook')
         self.connection = None
         self.cursor = None
     
